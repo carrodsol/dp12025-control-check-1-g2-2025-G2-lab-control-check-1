@@ -7,10 +7,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import es.us.dp1.chess.tournament.exceptions.UnfeasibleAttemptException;
+import es.us.dp1.chess.tournament.user.User;
+import es.us.dp1.chess.tournament.user.UserService;
+
 @Service
 public class ChessProblemAttemptService {
 
-    ChessProblemAttemptRepository repo;    
+    ChessProblemAttemptRepository repo;  
+    UserService userService;  
 
     @Autowired
     public ChessProblemAttemptService(ChessProblemAttemptRepository repo) {
@@ -22,10 +27,21 @@ public class ChessProblemAttemptService {
         return repo.findById(id);
     }
 
-    @Transactional
+    @Transactional(rollbackFor = UnfeasibleAttemptException.class)
     public ChessProblemAttempt save(ChessProblemAttempt m) {        
-        // TODO: Change to solve exercise 1:
-        return null;
+        User player  = m.getPlayer();
+        List<ChessProblemAttempt> attemptsForPlayer = repo.findAll().stream().filter(
+            a -> a.getPlayer().equals(player) && a.getFinish() == null
+        ).toList();
+        if(attemptsForPlayer.size() > 0) {
+                  //throw new UnfeasibleAttemptException("There is another ongoing attempt");
+        }
+    
+        if(m.getFinish() != null && m.getFinish().isBefore(m.getStart())) {
+            // throw new UnfeasibleAttemptException("The start must be before the finish");
+        }
+
+        return repo.save(m);
     }
 
     @Transactional(readOnly = true)
